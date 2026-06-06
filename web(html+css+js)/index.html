@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>石头剪刀布 · 智能版</title>
+    <style>
+        :root {
+            --bg: #f8f9fb;
+            --card-bg: #ffffff;
+            --primary: #5b8def;
+            --primary-dark: #3a6fd8;
+            --primary-light: #eef4fd;
+            --text: #2c3e50;
+            --text-secondary: #5a6c7d;
+            --border: #e1e8ef;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --win: #4a9e5c;
+            --lose: #c0392b;
+            --draw: #7f8c8d;
+            --gold: #c8960c;
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 560px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* 卡片通用 */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: box-shadow var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 头部 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header .title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+        }
+        .header .badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .badge.gold-badge {
+            background: #fef9e7;
+            color: var(--gold);
+        }
+        .badge.smart-on {
+            background: #e8f5e9;
+            color: #2e7d32;
+            animation: pulse-dot 2s infinite;
+        }
+        .badge.smart-off {
+            background: #f5f5f5;
+            color: #999;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* 经验条 */
+        .xp-bar-wrap {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .xp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5b8def, #3a6fd8);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .xp-text {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* 比分栏 */
+        .scoreboard {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .score-num {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .score-vs {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #bbb;
+            margin: 0 4px;
+        }
+        .score-info {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 2px;
+        }
+        .streak-badge {
+            display: inline-block;
+            background: #fff3e0;
+            color: #e67e22;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        /* 出拳按钮 */
+        .moves-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .move-btn {
+            flex: 1;
+            min-width: 90px;
+            max-width: 150px;
+            padding: 18px 12px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--card-bg);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        .move-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(91, 141, 239, 0.18);
+        }
+        .move-btn:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+            border-color: var(--primary-dark);
+            background: #dce8fa;
+        }
+        .move-btn .emoji {
+            font-size: 2.2rem;
+            line-height: 1;
+            transition: transform var(--transition);
+        }
+        .move-btn:hover .emoji {
+            transform: scale(1.1);
+        }
+        .move-btn .key-hint {
+            font-size: 0.68rem;
+            color: #aaa;
+            font-weight: 400;
+        }
+
+        /* 结果展示区 */
+        .result-area {
+            text-align: center;
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all var(--transition);
+            background: #fafbfc;
+            border: 1px dashed var(--border);
+        }
+        .result-area.has-result {
+            border-style: solid;
+            border-color: #d5dde5;
+            background: #fdfdfd;
+        }
+        .result-area.win-result {
+            background: #f6fdf6;
+            border-color: #c8e6c9;
+        }
+        .result-area.lose-result {
+            background: #fdf7f7;
+            border-color: #f5c6cb;
+        }
+        .result-area.draw-result {
+            background: #fafafa;
+            border-color: #ddd;
+        }
+        .result-emoji-row {
+            font-size: 2.4rem;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            justify-content: center;
+        }
+        .result-text {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .result-sub {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .result-hint {
+            font-size: 0.75rem;
+            color: #888;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        /* 结算区 */
+        .settlement {
+            text-align: center;
+            padding: 14px;
+            background: #fefdf5;
+            border: 1px solid #f0e6c0;
+            border-radius: var(--radius);
+            animation: fadeInUp 0.4s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .settlement h4 {
+            margin-bottom: 6px;
+            font-size: 1rem;
+            color: #5d4e37;
+        }
+        .settlement .gain {
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        /* 按钮通用 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 9px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            transition: all var(--transition);
+            white-space: nowrap;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            text-decoration: none;
+            color: var(--text);
+            background: #f5f6f8;
+            border-color: #dde1e6;
+        }
+        .btn:hover {
+            background: #eef1f5;
+            border-color: #ccd3db;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn.primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+        .btn.primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        .btn.outline {
+            background: transparent;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .btn.outline:hover {
+            background: var(--primary-light);
+        }
+        .btn.sm {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+        }
+        .btn.danger {
+            background: #fff;
+            border-color: #e0c8c8;
+            color: #a05050;
+        }
+        .btn.danger:hover {
+            background: #fef5f5;
+            border-color: #d4a0a0;
+        }
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        /* 折叠面板 */
+        .collapsible {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--card-bg);
+        }
+        .collapsible-header {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text);
+            transition: background var(--transition);
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            background: #f9fafb;
+        }
+        .collapsible-header .arrow {
+            transition: transform var(--transition);
+            font-size: 0.7rem;
+            color: #999;
+        }
+        .collapsible.open .collapsible-header .arrow {
+            transform: rotate(180deg);
+        }
+        .collapsible-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.35s ease;
+            padding: 0 16px;
+            border-top: 0px solid var(--border);
+        }
+        .collapsible.open .collapsible-body {
+            max-height: 500px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        /* 历史记录表 */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .history-table th,
+        .history-table td {
+            padding: 7px 8px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .history-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.72rem;
+            background: #fafbfc;
+        }
+        .history-table .win-row {
+            color: var(--win);
+            font-weight: 500;
+        }
+        .history-table .lose-row {
+            color: var(--lose);
+            font-weight: 500;
+        }
+        .history-table .draw-row {
+            color: var(--draw);
+        }
+
+        /* 统计 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            font-size: 0.82rem;
+        }
+        .stat-item {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        .stat-val {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* 设置区 */
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .setting-row label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .setting-row input[type="number"] {
+            width: 60px;
+            padding: 7px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            text-align: center;
+            outline: none;
+            transition: border-color var(--transition);
+        }
+        .setting-row input[type="number"]:focus {
+            border-color: var(--primary);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #ccc;
+            border-radius: 26px;
+            transition: var(--transition);
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        input:checked+.toggle-slider {
+            background: var(--primary);
+        }
+        input:checked+.toggle-slider:before {
+            transform: translateX(18px);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, top 0.3s ease;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            top: 30px;
+        }
+        .toast.success {
+            background: #4a9e5c;
+        }
+        .toast.error {
+            background: #c0392b;
+        }
+
+        /* 响应式 */
+        @media (max-width: 400px) {
+            .header .title {
+                font-size: 1.05rem;
+            }
+            .move-btn {
+                padding: 14px 8px;
+                font-size: 0.85rem;
+                min-width: 70px;
+            }
+            .move-btn .emoji {
+                font-size: 1.8rem;
+            }
+            .score-num {
+                font-size: 1.5rem;
+            }
+            .card {
+                padding: 12px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="card header" id="headerCard">
+            <span class="title">✊ 石头剪刀布</span>
+            <div class="badge-row">
+                <span class="badge" id="rankBadge">🥉 青铜 Lv.1</span>
+                <span class="badge gold-badge" id="goldBadge">🪙 <span id="goldDisplay">0</span></span>
+                <span class="badge smart-off" id="smartBadge">🎲 随机</span>
+            </div>
+            <div style="width:100%;">
+                <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpBar" style="width:0%"></div></div>
+                <div class="xp-text" id="xpText">经验 0 / 100</div>
+            </div>
+        </div>
+
+        <!-- 游戏设置 -->
+        <div class="card">
+            <div class="setting-row">
+                <label for="totalRoundsInput">📋 大局制：</label>
+                <input type="number" id="totalRoundsInput" value="5" min="1" max="21" step="2">
+                <span style="font-size:0.78rem;color:var(--text-secondary);">局（如5局3胜）</span>
+                <span style="flex:1;"></span>
+                <label for="smartToggle" style="font-size:0.85rem;font-weight:600;">🧠 智能模式</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="smartToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 比分板 -->
+        <div class="card" id="scoreboardCard">
+            <div class="scoreboard">
+                <div class="score-item">
+                    <span class="score-num" id="playerScore">0</span>
+                    <span class="score-label">👤 你</span>
+                </div>
+                <span class="score-vs">:</span>
+                <div class="score-item">
+                    <span class="score-num" id="computerScore">0</span>
+                    <span class="score-label">💻 电脑</span>
+                </div>
+                <div style="width:100%;" class="score-info">
+                    平局 <strong id="drawCount">0</strong> 次
+                    <span id="streakSpan"></span>
+                    <span style="margin-left:8px;font-size:0.75rem;color:#aaa;">目标<strong id="winThreshold">3</strong>胜</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 出拳按钮 -->
+        <div class="card">
+            <div class="moves-row">
+                <button class="move-btn" onclick="playerChoose('ROCK')" id="btnRock">
+                    <span class="emoji">🪨</span> 石头
+                    <span class="key-hint">按键 1</span>
+                </button>
+                <button class="move-btn" onclick="playerChoose('SCISSORS')" id="btnScissors">
+                    <span class="emoji">✂️</span> 剪刀
+                    <span class="key-hint">按键 2</span>
+                </button>
+                <button class="move-btn" onclick="playerChoose('PAPER')" id="btnPaper">
+                    <span class="emoji">🧻</span> 布
+                    <span class="key-hint">按键 3</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="card result-area" id="resultArea">
+            <span style="color:#bbb;font-size:0.85rem;">👆 点击上方按钮出拳，或按键盘 1/2/3</span>
+        </div>
+
+        <!-- 大局结算（隐藏） -->
+        <div class="card settlement" id="settlementCard" style="display:none;"></div>
+
+        <!-- 操作按钮 -->
+        <div class="card">
+            <div class="btn-row">
+                <button class="btn primary" onclick="startNewMatch()">🔄 开始新大局</button>
+                <button class="btn outline sm" onclick="toggleHistory()">📜 历史</button>
+                <button class="btn outline sm" onclick="toggleStats()">📊 统计</button>
+                <button class="btn sm" onclick="exportJSON()">💾 导出JSON</button>
+                <button class="btn sm" onclick="document.getElementById('importFile').click()">📥 导入JSON</button>
+                <button class="btn danger sm" onclick="resetAll()">🗑 重置</button>
+            </div>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importJSON(event)">
+        </div>
+
+        <!-- 历史记录折叠 -->
+        <div class="collapsible" id="historyCollapsible">
+            <div class="collapsible-header" onclick="toggleHistory()">
+                📜 历史记录 <span class="arrow">▼</span>
+            </div>
+            <div class="collapsible-body" id="historyBody">
+                <p style="color:#999;text-align:center;">暂无记录</p>
+            </div>
+        </div>
+
+        <!-- 统计折叠 -->
+        <div class="collapsible" id="statsCollapsible">
+            <div class="collapsible-header" onclick="toggleStats()">
+                📊 数据统计 <span class="arrow">▼</span>
+            </div>
+            <div class="collapsible-body" id="statsBody">
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            // ============ 数据模型 ============
+            const STORAGE_KEY = 'game_data_rps';
+            const Move = { ROCK: 'ROCK', SCISSORS: 'SCISSORS', PAPER: 'PAPER' };
+            const MoveDisplay = {
+                ROCK: { chinese: '石头', emoji: '🪨' },
+                SCISSORS: { chinese: '剪刀', emoji: '✂️' },
+                PAPER: { chinese: '布', emoji: '🧻' }
+            };
+            const Result = { WIN: 'WIN', LOSE: 'LOSE', DRAW: 'DRAW' };
+            const ResultDisplay = {
+                WIN: { text: '你赢了！', cls: 'win-result' },
+                LOSE: { text: '你输了！', cls: 'lose-result' },
+                DRAW: { text: '平局！', cls: 'draw-result' }
+            };
+
+            // 游戏状态
+            let gameData = { player: { level: 1, experience: 0, gold: 0 }, rounds: [] };
+            let smartMode = false;
+            let matchInProgress = false;
+            let matchTotalRounds = 5;
+            let matchPlayerWins = 0;
+            let matchComputerWins = 0;
+            let matchDraws = 0;
+            let currentStreak = 0;
+            let longestStreak = 0;
+            let lastResult = null; // 'WIN','LOSE','DRAW' for streak tracking
+
+            // ============ 工具函数 ============
+            function getWinThreshold(total) { return Math.floor(total / 2) + 1; }
+
+            function getRankTitle(level) {
+                if (level >= 10) return '👑 传说';
+                if (level >= 7) return '💎 钻石';
+                if (level >= 5) return '🥇 黄金';
+                if (level >= 3) return '🥈 白银';
+                return '🥉 青铜';
+            }
+
+            function expForNextLevel(level) { return 100 * level; }
+
+            function formatTime(isoStr) {
+                try {
+                    const d = new Date(isoStr);
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const min = String(d.getMinutes()).padStart(2, '0');
+                    return `${mm}-${dd} ${hh}:${min}`;
+                } catch (e) {
+                    return isoStr || '';
+                }
+            }
+
+            function nowISO() {
+                const d = new Date();
+                const y = d.getFullYear();
+                const mo = String(d.getMonth() + 1).padStart(2, '0');
+                const da = String(d.getDate()).padStart(2, '0');
+                const h = String(d.getHours()).padStart(2, '0');
+                const mi = String(d.getMinutes()).padStart(2, '0');
+                const s = String(d.getSeconds()).padStart(2, '0');
+                return `${y}-${mo}-${da}T${h}:${mi}:${s}`;
+            }
+
+            function showToast(msg, type = '') {
+                const t = document.getElementById('toast');
+                t.textContent = msg;
+                t.className = 'toast ' + type + ' show';
+                clearTimeout(t._timeout);
+                t._timeout = setTimeout(() => { t.className = 'toast'; }, 2000);
+            }
+
+            // ============ 持久化 ============
+            function saveToStorage() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(gameData));
+                } catch (e) { /* ignore */ }
+            }
+
+            function loadFromStorage() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        if (data && data.player && data.rounds) {
+                            gameData = data;
+                            // 确保player字段完整
+                            if (gameData.player.level == null) gameData.player.level = 1;
+                            if (gameData.player.experience == null) gameData.player.experience = 0;
+                            if (gameData.player.gold == null) gameData.player.gold = 0;
+                            if (!Array.isArray(gameData.rounds)) gameData.rounds = [];
+                            return true;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+                return false;
+            }
+
+            function exportJSON() {
+                const blob = new Blob([JSON.stringify(gameData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'game_data.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('✅ JSON已导出', 'success');
+            }
+
+            function importJSON(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data || !data.player || !Array.isArray(data.rounds)) {
+                            throw new Error('格式不符');
+                        }
+                        if (data.player.level == null) data.player.level = 1;
+                        if (data.player.experience == null) data.player.experience = 0;
+                        if (data.player.gold == null) data.player.gold = 0;
+                        gameData = data;
+                        saveToStorage();
+                        resetMatchState();
+                        recalcStreak();
+                        refreshAllUI();
+                        showToast('✅ JSON导入成功！共' + gameData.rounds.length + '条记录', 'success');
+                    } catch (err) {
+                        showToast('❌ 文件格式错误，请检查', 'error');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+
+            function resetAll() {
+                if (confirm('确定要重置所有数据吗？此操作不可恢复！\n（段位、经验、金币、历史记录将全部清空）')) {
+                    gameData = { player: { level: 1, experience: 0, gold: 0 }, rounds: [] };
+                    saveToStorage();
+                    resetMatchState();
+                    recalcStreak();
+                    refreshAllUI();
+                    document.getElementById('resultArea').className = 'card result-area';
+                    document.getElementById('resultArea').innerHTML =
+                        '<span style="color:#bbb;font-size:0.85rem;">👆 点击上方按钮出拳，或按键盘 1/2/3</span>';
+                    document.getElementById('settlementCard').style.display = 'none';
+                    showToast('🗑 数据已重置', '');
+                }
+            }
+
+            // ============ 智能预测 ============
+            function smartMove() {
+                const hist = gameData.rounds;
+                if (hist.length === 0) return randomMove();
+                if (hist.length >= 3) {
+                    const last3 = [
+                        hist[hist.length - 3].playerMove,
+                        hist[hist.length - 2].playerMove,
+                        hist[hist.length - 1].playerMove
+                    ];
+                    const counter = { ROCK: 0, SCISSORS: 0, PAPER: 0 };
+                    for (let i = 0; i < hist.length - 3; i++) {
+                        if (hist[i].playerMove === last3[0] &&
+                            hist[i + 1].playerMove === last3[1] &&
+                            hist[i + 2].playerMove === last3[2]) {
+                            counter[hist[i + 3].playerMove]++;
+                        }
+                    }
+                    let predicted = null;
+                    let maxCount = 0;
+                    for (const [move, count] of Object.entries(counter)) {
+                        if (count > maxCount) { maxCount = count;
+                            predicted = move; }
+                    }
+                    if (predicted && maxCount > 0) {
+                        return getWinningMoveAgainst(predicted);
+                    }
+                }
+                return predictByFrequency();
+            }
+
+            function predictByFrequency() {
+                const freq = { ROCK: 0, SCISSORS: 0, PAPER: 0 };
+                for (const r of gameData.rounds) freq[r.playerMove]++;
+                let most = 'ROCK';
+                let max = 0;
+                for (const [move, count] of Object.entries(freq)) {
+                    if (count > max) { max = count;
+                        most = move; }
+                }
+                return getWinningMoveAgainst(most);
+            }
+
+            function getWinningMoveAgainst(move) {
+                if (move === 'ROCK') return 'PAPER';
+                if (move === 'SCISSORS') return 'ROCK';
+                if (move === 'PAPER') return 'SCISSORS';
+                return randomMove();
+            }
+
+            function randomMove() {
+                const moves = ['ROCK', 'SCISSORS', 'PAPER'];
+                return moves[Math.floor(Math.random() * 3)];
+            }
+
+            function judge(playerMove, computerMove) {
+                if (playerMove === computerMove) return 'DRAW';
+                if ((playerMove === 'ROCK' && computerMove === 'SCISSORS') ||
+                    (playerMove === 'SCISSORS' && computerMove === 'PAPER') ||
+                    (playerMove === 'PAPER' && computerMove === 'ROCK')) {
+                    return 'WIN';
+                }
+                return 'LOSE';
+            }
+
+            // ============ 连胜计算 ============
+            function recalcStreak() {
+                currentStreak = 0;
+                longestStreak = 0;
+                let temp = 0;
+                for (const r of gameData.rounds) {
+                    if (r.result === 'WIN') {
+                        temp++;
+                        if (temp > longestStreak) longestStreak = temp;
+                    } else {
+                        temp = 0;
+                    }
+                }
+                currentStreak = temp;
+            }
+
+            // ============ 游戏逻辑 ============
+            function playerChoose(playerMove) {
+                if (!matchInProgress) {
+                    // 自动开始新大局
+                    matchTotalRounds = parseInt(document.getElementById('totalRoundsInput').value) || 5;
+                    if (matchTotalRounds < 1) matchTotalRounds = 1;
+                    startMatchInternal();
+                }
+                if (!matchInProgress) return;
+
+                const computerMove = smartMode ? smartMove() : randomMove();
+                const result = judge(playerMove, computerMove);
+                const round = {
+                    playerMove: playerMove,
+                    computerMove: computerMove,
+                    result: result,
+                    time: nowISO()
+                };
+                gameData.rounds.push(round);
+
+                if (result === 'WIN') matchPlayerWins++;
+                else if (result === 'LOSE') matchComputerWins++;
+                else matchDraws++;
+
+                // 更新连胜
+                if (result === 'WIN') {
+                    currentStreak++;
+                    if (currentStreak > longestStreak) longestStreak = currentStreak;
+                } else {
+                    currentStreak = 0;
+                }
+                lastResult = result;
+
+                saveToStorage();
+                displayRoundResult(playerMove, computerMove, result);
+                refreshScoreboard();
+
+                const threshold = getWinThreshold(matchTotalRounds);
+                if (matchPlayerWins >= threshold || matchComputerWins >= threshold ||
+                    (matchPlayerWins + matchComputerWins + matchDraws) >= matchTotalRounds) {
+                    settleMatch();
+                }
+            }
+
+            function startMatchInternal() {
+                matchTotalRounds = parseInt(document.getElementById('totalRoundsInput').value) || 5;
+                if (matchTotalRounds < 1) matchTotalRounds = 1;
+                matchPlayerWins = 0;
+                matchComputerWins = 0;
+                matchDraws = 0;
+                matchInProgress = true;
+                document.getElementById('settlementCard').style.display = 'none';
+                document.getElementById('resultArea').className = 'card result-area';
+                document.getElementById('resultArea').innerHTML =
+                    '<span style="color:#bbb;font-size:0.85rem;">👆 选择你的出拳吧！</span>';
+                refreshScoreboard();
+                refreshAllUI();
+            }
+
+            function startNewMatch() {
+                startMatchInternal();
+                document.getElementById('settlementCard').style.display = 'none';
+                document.getElementById('resultArea').className = 'card result-area';
+                document.getElementById('resultArea').innerHTML =
+                    '<span style="color:#bbb;font-size:0.85rem;">👆 选择你的出拳吧！</span>';
+                showToast('🔄 新大局已开始 (BO' + matchTotalRounds + ')', '');
+            }
+
+            function resetMatchState() {
+                matchInProgress = false;
+                matchPlayerWins = 0;
+                matchComputerWins = 0;
+                matchDraws = 0;
+                lastResult = null;
+            }
+
+            function displayRoundResult(playerMove, computerMove, result) {
+                const area = document.getElementById('resultArea');
+                const pd = MoveDisplay[playerMove];
+                const cd = MoveDisplay[computerMove];
+                const rd = ResultDisplay[result];
+                const modeHint = smartMode ?
+                    '<span style="font-size:0.75rem;color:#5b8def;">🧠 智能分析中...</span>' :
+                    '<span style="font-size:0.75rem;color:#999;">🎲 随机出拳</span>';
+                area.className = 'card result-area has-result ' + rd.cls;
+                area.innerHTML = `
+                    <div class="result-emoji-row">
+                        <span>${pd.emoji}</span>
+                        <span style="font-size:1rem;color:#ccc;">VS</span>
+                        <span>${cd.emoji}</span>
+                    </div>
+                    <div class="result-text">${rd.text}</div>
+                    <div style="font-size:0.85rem;">你出 <strong>${pd.chinese}</strong> · 电脑出 <strong>${cd.chinese}</strong></div>
+                    ${modeHint}
+                    ${smartMode ? '<div class="result-hint">💡 电脑根据你的历史记录做出了预测</div>' : ''}
+                `;
+            }
+
+            function settleMatch() {
+                matchInProgress = false;
+                const card = document.getElementById('settlementCard');
+                card.style.display = 'block';
+                let expGain, goldGain, msg;
+                if (matchPlayerWins > matchComputerWins) {
+                    expGain = 30 + Math.floor(Math.random() * 21);
+                    goldGain = 50 + Math.floor(Math.random() * 51);
+                    msg = '🎉 恭喜你赢得了这个大局！';
+                } else if (matchComputerWins > matchPlayerWins) {
+                    expGain = 10 + Math.floor(Math.random() * 11);
+                    goldGain = 10 + Math.floor(Math.random() * 21);
+                    msg = '😞 很遗憾，你输掉了这个大局。';
+                } else {
+                    expGain = 20 + Math.floor(Math.random() * 11);
+                    goldGain = 30 + Math.floor(Math.random() * 21);
+                    msg = '🤝 大局平局！';
+                }
+                gameData.player.experience += expGain;
+                gameData.player.gold += goldGain;
+                const oldLevel = gameData.player.level;
+                checkLevelUp();
+                const newLevel = gameData.player.level;
+                let levelUpMsg = '';
+                if (newLevel > oldLevel) {
+                    levelUpMsg = `<div style="margin-top:6px;font-weight:700;color:#3a6fd8;">🌟 升级了！当前段位: ${getRankTitle(newLevel)} (Lv.${newLevel})</div>`;
+                }
+                card.innerHTML = `
+                    <h4>${msg}</h4>
+                    <p>获得经验 <span class="gain">+${expGain}</span> · 金币 <span class="gain">+${goldGain}</span></p>
+                    ${levelUpMsg}
+                    <p style="font-size:0.8rem;color:#888;margin-top:4px;">当前段位: ${getRankTitle(gameData.player.level)} Lv.${gameData.player.level} | 金币: ${gameData.player.gold}</p>
+                    <button class="btn primary sm" style="margin-top:8px;" onclick="startNewMatch()">🔄 再来一局</button>
+                `;
+                saveToStorage();
+                refreshAllUI();
+            }
+
+            function checkLevelUp() {
+                while (gameData.player.experience >= expForNextLevel(gameData.player.level)) {
+                    gameData.player.experience -= expForNextLevel(gameData.player.level);
+                    gameData.player.level++;
+                }
+            }
+
+            // ============ UI刷新 ============
+            function refreshAllUI() {
+                const p = gameData.player;
+                document.getElementById('rankBadge').textContent = getRankTitle(p.level) + ' Lv.' + p.level;
+                document.getElementById('goldDisplay').textContent = p.gold;
+                const xpNeeded = expForNextLevel(p.level);
+                const xpPct = Math.min(100, Math.round((p.experience / xpNeeded) * 100));
+                document.getElementById('xpBar').style.width = xpPct + '%';
+                document.getElementById('xpText').textContent = '经验 ' + p.experience + ' / ' + xpNeeded;
+                document.getElementById('smartBadge').textContent = smartMode ? '🧠 智能' : '🎲 随机';
+                document.getElementById('smartBadge').className = smartMode ? 'badge smart-on' : 'badge smart-off';
+                document.getElementById('smartToggle').checked = smartMode;
+                document.getElementById('totalRoundsInput').value = matchTotalRounds;
+                document.getElementById('winThreshold').textContent = getWinThreshold(matchTotalRounds);
+                refreshScoreboard();
+                refreshHistoryTable();
+                refreshStats();
+            }
+
+            function refreshScoreboard() {
+                document.getElementById('playerScore').textContent = matchPlayerWins;
+                document.getElementById('computerScore').textContent = matchComputerWins;
+                document.getElementById('drawCount').textContent = matchDraws;
+                document.getElementById('winThreshold').textContent = getWinThreshold(matchTotalRounds);
+                const streakSpan = document.getElementById('streakSpan');
+                if (currentStreak >= 2) {
+                    streakSpan.innerHTML = '<span class="streak-badge">🔥 连胜' + currentStreak + '场</span>';
+                } else {
+                    streakSpan.innerHTML = '';
+                }
+            }
+
+            function refreshHistoryTable() {
+                const body = document.getElementById('historyBody');
+                const rounds = gameData.rounds;
+                if (rounds.length === 0) {
+                    body.innerHTML = '<p style="color:#999;text-align:center;">暂无记录</p>';
+                    return;
+                }
+                const recent = rounds.slice(-50).reverse();
+                let html =
+                    '<table class="history-table"><thead><tr><th>#</th><th>时间</th><th>你</th><th>电脑</th><th>结果</th></tr></thead><tbody>';
+                for (let i = 0; i < recent.length; i++) {
+                    const r = recent[i];
+                    const idx = rounds.length - i;
+                    const rowCls = r.result === 'WIN' ? 'win-row' : r.result === 'LOSE' ? 'lose-row' : 'draw-row';
+                    html += `<tr class="${rowCls}">
+                        <td>${idx}</td>
+                        <td>${formatTime(r.time)}</td>
+                        <td>${MoveDisplay[r.playerMove]?.emoji||''} ${MoveDisplay[r.playerMove]?.chinese||r.playerMove}</td>
+                        <td>${MoveDisplay[r.computerMove]?.emoji||''} ${MoveDisplay[r.computerMove]?.chinese||r.computerMove}</td>
+                        <td>${ResultDisplay[r.result]?.text||r.result}</td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                if (rounds.length > 50) {
+                    html += '<p style="text-align:center;font-size:0.75rem;color:#999;">仅显示最近50条，共' + rounds.length +
+                        '条记录</p>';
+                }
+                body.innerHTML = html;
+            }
+
+            function refreshStats() {
+                const rounds = gameData.rounds;
+                const grid = document.getElementById('statsGrid');
+                const total = rounds.length;
+                let wins = 0,
+                    loses = 0,
+                    draws = 0;
+                const freq = { ROCK: 0, SCISSORS: 0, PAPER: 0 };
+                for (const r of rounds) {
+                    if (r.result === 'WIN') wins++;
+                    else if (r.result === 'LOSE') loses++;
+                    else draws++;
+                    freq[r.playerMove] = (freq[r.playerMove] || 0) + 1;
+                }
+                const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+                let favMove = '—';
+                let favCount = 0;
+                for (const [m, c] of Object.entries(freq)) {
+                    if (c > favCount) { favCount = c;
+                        favMove = MoveDisplay[m]?.chinese || m; }
+                }
+                const smartRounds = rounds.filter(r => r._smart).length; // 网页版暂不标记，保留字段
+                grid.innerHTML = `
+                    <div class="stat-item"><div class="stat-val">${total}</div><div class="stat-label">总局数</div></div>
+                    <div class="stat-item"><div class="stat-val">${winRate}%</div><div class="stat-label">胜率</div></div>
+                    <div class="stat-item"><div class="stat-val">${wins}</div><div class="stat-label">胜利</div></div>
+                    <div class="stat-item"><div class="stat-val">${loses}</div><div class="stat-label">失败</div></div>
+                    <div class="stat-item"><div class="stat-val">${draws}</div><div class="stat-label">平局</div></div>
+                    <div class="stat-item"><div class="stat-val">${longestStreak}</div><div class="stat-label">最长连胜</div></div>
+                    <div class="stat-item"><div class="stat-val">${favMove}</div><div class="stat-label">最爱出拳</div></div>
+                    <div class="stat-item"><div class="stat-val">${currentStreak}</div><div class="stat-label">当前连胜</div></div>
+                `;
+            }
+
+            function toggleHistory() {
+                const el = document.getElementById('historyCollapsible');
+                el.classList.toggle('open');
+                if (el.classList.contains('open')) refreshHistoryTable();
+            }
+
+            function toggleStats() {
+                const el = document.getElementById('statsCollapsible');
+                el.classList.toggle('open');
+                if (el.classList.contains('open')) refreshStats();
+            }
+
+            // ============ 事件监听 ============
+            document.getElementById('smartToggle').addEventListener('change', function() {
+                smartMode = this.checked;
+                refreshAllUI();
+                const status = smartMode ? '开启' : '关闭';
+                showToast('🧠 智能模式已' + status, '');
+            });
+
+            document.getElementById('totalRoundsInput').addEventListener('change', function() {
+                let val = parseInt(this.value) || 5;
+                if (val < 1) val = 1;
+                if (val > 21) val = 21;
+                this.value = val;
+                matchTotalRounds = val;
+                refreshAllUI();
+            });
+
+            // 键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName === 'INPUT' && e.target.type === 'number') return;
+                if (e.key === '1') { e.preventDefault();
+                    playerChoose('ROCK');
+                    animateBtn('btnRock'); } else if (e.key === '2') { e.preventDefault();
+                    playerChoose('SCISSORS');
+                    animateBtn('btnScissors'); } else if (e.key === '3') { e.preventDefault();
+                    playerChoose('PAPER');
+                    animateBtn('btnPaper'); }
+            });
+
+            function animateBtn(btnId) {
+                const btn = document.getElementById(btnId);
+                btn.style.transform = 'scale(0.9)';
+                setTimeout(() => { btn.style.transform = ''; }, 120);
+            }
+
+            // ============ 初始化 ============
+            function init() {
+                if (!loadFromStorage()) {
+                    gameData = { player: { level: 1, experience: 0, gold: 0 }, rounds: [] };
+                    saveToStorage();
+                }
+                recalcStreak();
+                matchTotalRounds = 5;
+                document.getElementById('totalRoundsInput').value = 5;
+                resetMatchState();
+                refreshAllUI();
+                document.getElementById('resultArea').innerHTML =
+                    '<span style="color:#bbb;font-size:0.85rem;">👆 点击上方按钮出拳，或按键盘 1/2/3</span>';
+                document.getElementById('settlementCard').style.display = 'none';
+            }
+
+            // 暴露必要函数到全局
+            window.playerChoose = playerChoose;
+            window.startNewMatch = startNewMatch;
+            window.toggleHistory = toggleHistory;
+            window.toggleStats = toggleStats;
+            window.exportJSON = exportJSON;
+            window.importJSON = importJSON;
+            window.resetAll = resetAll;
+
+            init();
+            console.log('🪨✂️🧻 石头剪刀布 · 智能版 已就绪');
+            console.log('  快捷键: 1=石头  2=剪刀  3=布');
+            console.log('  数据与Java版game_data.json格式兼容');
+        })();
+    </script>
+</body>
+</html>
